@@ -17,7 +17,7 @@ async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("Pong")
 
 @bot.tree.command(name="ping_user", description="ping a user")
-async def ping(interaction: discord.Interaction, user: discord.User):
+async def ping_user(interaction: discord.Interaction, user: discord.User):
     await interaction.response.send_message(f"Hey {user.mention}")
 
 @bot.tree.command(name="parrot", description="repeats argument")
@@ -31,6 +31,14 @@ async def join_leaderboard(interaction: discord.Interaction, discord_id: str, st
         await interaction.response.send_message("User added to the leaderboard")
     else:
         await interaction.response.send_message("User is already on the leaderboard")
+
+@bot.tree.command(name="leave_leaderboard", description="allows a user to join the leaderboard")
+async def leave_leaderboard(interaction: discord.Interaction, discord_id: str):
+    check = data_updater.remove_data(discord_id)
+    if check is True:
+        await interaction.response.send_message("User removed from the leaderboard")
+    else:
+        await interaction.response.send_message("User is not on the leaderboard")
 
 @bot.event
 async def on_ready():
