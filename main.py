@@ -4,8 +4,11 @@ import os
 from discord.ext import commands
 
 import data_updater
+import steam_hours
 
 load_dotenv()
+
+steam_api = str(os.getenv("STEAM_API_KEY"))
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -33,18 +36,31 @@ async def join_leaderboard(interaction: discord.Interaction, discord_id: str, st
         await interaction.response.send_message("User is already on the leaderboard")
 
 @bot.tree.command(name="leave_leaderboard", description="allows a user to join the leaderboard")
-async def leave_leaderboard(interaction: discord.Interaction, discord_id: str):
+async def leave_leaderboard(interaction: discord.Interaction):
+    discord_id = str(interaction.user.id)
     check = data_updater.remove_data(discord_id)
     if check is True:
-        await interaction.response.send_message("User removed from the leaderboard")
+        await interaction.response.send_message("User removed from the leaderbord")
     else:
         await interaction.response.send_message("User is not on the leaderboard")
+
+@bot.tree.command(name="get_hours", description="gets total hours played on steam")
+async def get_hours(interaction: discord.Interaction):
+    discord_id = str(interaction.user.id)
+
+    data = data_updater.get_data()
+    if discord_id in data:
+        steam_id = data[discord_id]
+
+        hours = steam_hours.get_hours(steam_id, steam_api)
+        await interaction.response.send_message(f"Your have played {hours:.2f} hours on steam")
+    else:
+        await interaction.response.send_message("Your information has not been added to the leaderboard, please use /join_leaderboard")
 
 @bot.event
 async def on_ready():
     await bot.tree.sync()
-    print("Command tree synced")
+    print("Command tree synced and bot is ready")
 
-print("Local commands:", bot.tree.get_commands())
 token = str(os.getenv("DISCORD_TOKEN"))
 bot.run(token)

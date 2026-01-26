@@ -1,5 +1,11 @@
 import json
 
+def get_data():
+    with open("data.json", "r") as f:
+        data = json.load(f)
+
+    return data
+
 def update_data(discord_id, steam_id):
 
     with open("data.json", "r") as f:
