@@ -1,7 +1,8 @@
+import datetime
 import discord
 from dotenv import load_dotenv
 import os
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 import data_updater
 import steam_hours
@@ -12,6 +13,12 @@ steam_api = str(os.getenv("STEAM_API_KEY"))
 
 intents = discord.Intents.default()
 intents.message_content = True
+
+all_players_embed = discord.Embed(
+    title="Leaderboard members",
+    description="All the players",
+    color=discord.Color.orange()
+)
 
 bot = commands.Bot(command_prefix="$", intents=intents)
 
@@ -28,8 +35,9 @@ async def parrot(interaction: discord.Interaction, message: str):
     await interaction.response.send_message(message)
 
 @bot.tree.command(name="join_leaderboard", description="allows a user to join the leaderboard")
-async def join_leaderboard(interaction: discord.Interaction, discord_id: str, steam_id: str):
-    check = data_updater.update_data(discord_id, steam_id)
+async def join_leaderboard(interaction: discord.Interaction, steam_id: str):
+    discord_id = str(interaction.user.id)
+    check = data_updater.add_player(discord_id, steam_id)
     if check is True:
         await interaction.response.send_message("User added to the leaderboard")
     else:
@@ -38,7 +46,7 @@ async def join_leaderboard(interaction: discord.Interaction, discord_id: str, st
 @bot.tree.command(name="leave_leaderboard", description="allows a user to join the leaderboard")
 async def leave_leaderboard(interaction: discord.Interaction):
     discord_id = str(interaction.user.id)
-    check = data_updater.remove_data(discord_id)
+    check = data_updater.remove_player(discord_id)
     if check is True:
         await interaction.response.send_message("User removed from the leaderbord")
     else:
@@ -47,20 +55,50 @@ async def leave_leaderboard(interaction: discord.Interaction):
 @bot.tree.command(name="get_hours", description="gets total hours played on steam")
 async def get_hours(interaction: discord.Interaction):
     discord_id = str(interaction.user.id)
-
     data = data_updater.get_data()
+
     if discord_id in data:
         steam_id = data[discord_id]
-
         hours = steam_hours.get_hours(steam_id, steam_api)
         await interaction.response.send_message(f"Your have played {hours:.2f} hours on steam")
     else:
         await interaction.response.send_message("Your information has not been added to the leaderboard, please use /join_leaderboard")
 
+@bot.tree.command(name="list_players", description="lists all the players who joined the leaderboard")
+async def list_players(interaction: discord.Interaction):
+    data = data_updater.get_data()
+    users = data.keys()
+
+    for user in users:
+        user = await bot.fetch_user(user)
+        username = user.name
+        all_players_embed.add_field(name=username, value="")
+
+    all_players_embed.set_footer(text="Combustion Bot")
+    await interaction.response.send_message(embed=all_players_embed)
+
+@tasks.loop(time=datetime.time(hour=0, minute=0))
+async def get_hours_monday():
+    if datetime.datetime.now().weekday() == 0:
+        data = data_updater.get_data()
+        
+        # json file data looks like discord_id: {steam_id: 123, monday_hours: 123}
+        for discord_id in data:
+            id_and_hours = data[discord_id]
+            hours = steam_hours.get_hours(id_and_hours["steam_id"], steam_api)
+            data_updater.add_monday_hours(discord_id, hours)
+
+        print("Monday hours added")
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()
     print("Command tree synced and bot is ready")
+    for cmd in bot.tree.get_commands():
+        print(cmd.name)
+
+    if not get_hours_monday.is_running():
+        get_hours_monday.start()
 
 token = str(os.getenv("DISCORD_TOKEN"))
 bot.run(token)
