@@ -14,11 +14,6 @@ def save_data(data):
 def add_player(discord_id, steam_id):
 
     data = get_data()
-    #with open("data.json", "r") as f:
-    #    try:
-    #        data = json.load(f)
-    #    except json.JSONDecodeError:
-    #        data = {}
     
     if discord_id not in data:
         data[str(discord_id)] = {"steam_id": str(steam_id), "monday_hours": 0}
@@ -31,11 +26,6 @@ def add_player(discord_id, steam_id):
 def remove_player(discord_id):
 
     data = get_data()
-    #with open("data.json", "r") as f:
-    #    try:
-    #        data = json.load(f)
-    #    except json.JSONDecodeError:
-    #        data = {}
 
     if discord_id in data:
         del data[discord_id]
