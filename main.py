@@ -64,7 +64,7 @@ async def get_hours(interaction: discord.Interaction):
     data = data_updater.get_data()
 
     if discord_id in data:
-        steam_id = data[discord_id]
+        steam_id = data[discord_id]["steam_id"]
         hours = steam_hours.get_hours(steam_id, steam_api)
         await interaction.response.send_message(f"Your have played {hours:.2f} hours on steam")
     else:
@@ -96,9 +96,9 @@ async def get_hours_monday():
         print("Monday hours added")
 
 channel_id = os.getenv("CHANNEL_ID")
-@tasks.loop(time=datetime.time(hour=7, minute=28))
+@tasks.loop(time=datetime.time(hour=15, minute=34))
 async def create_leaderboard():
-    if datetime.datetime.now().weekday() == 3: # 6 is sunday
+    if datetime.datetime.now().weekday() == 1: # 6 is sunday
         data = data_updater.get_data()
         new_data = {}
 
@@ -107,6 +107,7 @@ async def create_leaderboard():
         for discord_id, id_and_hours in data.items():
             monday_hours = id_and_hours["monday_hours"]
             sunday_hours = steam_hours.get_hours(id_and_hours["steam_id"], steam_api)
+            print(sunday_hours)
             new_hours = sunday_hours - monday_hours
             new_data[discord_id] = new_hours
 
@@ -119,11 +120,11 @@ async def create_leaderboard():
             i = i + 1
             user = await bot.fetch_user(discord_id)
             username = user.name
-            leaderboard_embed.add_field(name=f"{i}. {username}", value=f"{hours} hours")
+            leaderboard_embed.add_field(name=f"{i}. {username}", value=f"{hours:.2f} hours")
 
         channel = bot.get_channel(int(channel_id))
         await channel.send(embed=leaderboard_embed)
-        await channel.send(f"Winner is {f"<@{winner_id}>"} with {winner_hours} hours")
+        await channel.send(f"Winner is {f"<@{winner_id}>"} with {winner_hours:.2f} hours")
 
 @bot.event
 async def on_ready():
