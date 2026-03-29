@@ -83,9 +83,9 @@ async def list_players(interaction: discord.Interaction):
     all_players_embed.set_footer(text="Combustion Bot")
     await interaction.response.send_message(embed=all_players_embed)
 
-@tasks.loop(time=datetime.time(hour=0, minute=0))
+@tasks.loop(time=datetime.time(hour=15, minute=41))
 async def get_hours_monday():
-    if datetime.datetime.now().weekday() == 0: # 0 is monday
+    if datetime.datetime.now().weekday() == 1: # 0 is monday
         data = data_updater.get_data()
         
         # json file data looks like {discord_id: {steam_id: 123, monday_hours: 123}}
@@ -140,4 +140,8 @@ async def on_ready():
         create_leaderboard.start()
 
 token = str(os.getenv("DISCORD_TOKEN"))
+
+print("TOKEN repr:", repr(token))
+print("TOKEN length:", len(token))
+
 bot.run(token)
