@@ -74,20 +74,10 @@ async def list_players(interaction: discord.Interaction):
         username = user.name
         embed.add_field(name=username, value=f"Number of wins: {win_count}", inline=False)
 
-
-    #all_users = []
-    #for user in users:
-    #    user = await bot.fetch_user(user)
-    #    all_users.append(user.name)
-
-    #all_users = "\n".join(all_users)
-    #embed.add_field(name="", value=all_users)
-
     embed.set_footer(text="Combustion Bot")
     await interaction.response.send_message(embed=embed)
 
-#@tasks.loop(time=datetime.time(hour=0, minute=0))
-@tasks.loop(seconds=10)
+@tasks.loop(time=datetime.time(hour=0, minute=0))
 async def get_hours_monday():
     if datetime.datetime.now().weekday() == 0: # 0 is monday
         data = data_updater.get_data()
@@ -99,8 +89,7 @@ async def get_hours_monday():
 
 
 channel_id = os.getenv("CHANNEL_ID")
-#@tasks.loop(time=datetime.time(hour=23, minute=50))
-@tasks.loop(seconds=10)
+@tasks.loop(time=datetime.time(hour=23, minute=50))
 async def create_leaderboard():
     if datetime.datetime.now().weekday() == 0: # 6 is sunday
         data = data_updater.get_data()
