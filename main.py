@@ -3,7 +3,6 @@ import discord
 from dotenv import load_dotenv
 import os
 from discord.ext import commands, tasks
-
 import data_updater
 import steam_hours
 
@@ -13,18 +12,6 @@ steam_api = str(os.getenv("STEAM_API_KEY"))
 
 intents = discord.Intents.default()
 intents.message_content = True
-
-all_players_embed = discord.Embed(
-    title="Leaderboard members",
-    description="All the players",
-    color=discord.Color.orange()
-)
-
-leaderboard_embed = discord.Embed(
-    title="Leaderboard",
-    description="Results of weekly hours",
-    color=discord.Color.orange()
-)
 
 bot = commands.Bot(command_prefix="$", intents=intents)
 
@@ -42,6 +29,10 @@ async def parrot(interaction: discord.Interaction, message: str):
 
 @bot.tree.command(name="join_leaderboard", description="allows a user to join the leaderboard")
 async def join_leaderboard(interaction: discord.Interaction, steam_id: str):
+    if len(steam_id) != 17:
+        await interaction.response.send_message("Please input a valid steam_id, its 17 characters long")
+        return;
+
     discord_id = str(interaction.user.id)
     check = data_updater.add_player(discord_id, steam_id)
     if check is True:
@@ -63,29 +54,42 @@ async def get_hours(interaction: discord.Interaction):
     discord_id = str(interaction.user.id)
     data = data_updater.get_data()
 
-    if discord_id in data:
-        steam_id = data[discord_id]["steam_id"]
-        hours = steam_hours.get_hours(steam_id, steam_api)
-        await interaction.response.send_message(f"Your have played {hours:.2f} hours on steam")
-    else:
+    if discord_id not in data:
         await interaction.response.send_message("Your information has not been added to the leaderboard, please use /join_leaderboard")
+        return;
 
-@bot.tree.command(name="list_players", description="lists all the players who joined the leaderboard")
+    steam_id = data[discord_id]["steam_id"]
+    hours = steam_hours.get_hours(steam_id, steam_api)
+    await interaction.response.send_message(f"Your have played {hours:.2f} hours on steam")
+
+@bot.tree.command(name="list_players_and_wins", description="lists all the players and their wins")
 async def list_players(interaction: discord.Interaction):
     data = data_updater.get_data()
-    users = data.keys()
+    #users = data.keys()
+    embed = discord.Embed(title="Leaderboard members", description="", color=discord.Color.orange())
 
-    for user in users:
+    for user, value in data.items():
+        win_count = value["total_wins"]
         user = await bot.fetch_user(user)
         username = user.name
-        all_players_embed.add_field(name=username, value="")
+        embed.add_field(name=username, value=f"Number of wins: {win_count}", inline=False)
 
-    all_players_embed.set_footer(text="Combustion Bot")
-    await interaction.response.send_message(embed=all_players_embed)
 
-@tasks.loop(time=datetime.time(hour=15, minute=41))
+    #all_users = []
+    #for user in users:
+    #    user = await bot.fetch_user(user)
+    #    all_users.append(user.name)
+
+    #all_users = "\n".join(all_users)
+    #embed.add_field(name="", value=all_users)
+
+    embed.set_footer(text="Combustion Bot")
+    await interaction.response.send_message(embed=embed)
+
+#@tasks.loop(time=datetime.time(hour=0, minute=0))
+@tasks.loop(seconds=10)
 async def get_hours_monday():
-    if datetime.datetime.now().weekday() == 1: # 0 is monday
+    if datetime.datetime.now().weekday() == 0: # 0 is monday
         data = data_updater.get_data()
         
         # json file data looks like {discord_id: {steam_id: 123, monday_hours: 123}}
@@ -93,12 +97,12 @@ async def get_hours_monday():
             hours = steam_hours.get_hours(id_and_hours["steam_id"], steam_api)
             data_updater.add_monday_hours(discord_id, hours)
 
-        print("Monday hours added")
 
 channel_id = os.getenv("CHANNEL_ID")
-@tasks.loop(time=datetime.time(hour=15, minute=34))
+#@tasks.loop(time=datetime.time(hour=23, minute=50))
+@tasks.loop(seconds=10)
 async def create_leaderboard():
-    if datetime.datetime.now().weekday() == 1: # 6 is sunday
+    if datetime.datetime.now().weekday() == 0: # 6 is sunday
         data = data_updater.get_data()
         new_data = {}
 
@@ -107,23 +111,25 @@ async def create_leaderboard():
         for discord_id, id_and_hours in data.items():
             monday_hours = id_and_hours["monday_hours"]
             sunday_hours = steam_hours.get_hours(id_and_hours["steam_id"], steam_api)
-            print(sunday_hours)
             new_hours = sunday_hours - monday_hours
             new_data[discord_id] = new_hours
 
         sorted_data = sorted(new_data.items(), key=lambda item: item[1], reverse=True)
         winner_id, winner_hours = sorted_data[0]
 
+        data_updater.update_wins(winner_id)
+
         # create embed to send
+        embed = discord.Embed(title="Leaderboard", description="Results of weekly hours", color=discord.Color.orange())
         i = 0
-        for discord_id, hours in new_data.items():
+        for discord_id, hours in sorted_data:
             i = i + 1
             user = await bot.fetch_user(discord_id)
             username = user.name
-            leaderboard_embed.add_field(name=f"{i}. {username}", value=f"{hours:.2f} hours")
+            embed.add_field(name=f"{i}. {username}", value=f"{hours:.2f} hours\n", inline=False)
 
         channel = bot.get_channel(int(channel_id))
-        await channel.send(embed=leaderboard_embed)
+        await channel.send(embed=embed)
         await channel.send(f"Winner is {f"<@{winner_id}>"} with {winner_hours:.2f} hours")
 
 @bot.event
@@ -140,8 +146,4 @@ async def on_ready():
         create_leaderboard.start()
 
 token = str(os.getenv("DISCORD_TOKEN"))
-
-print("TOKEN repr:", repr(token))
-print("TOKEN length:", len(token))
-
 bot.run(token)
