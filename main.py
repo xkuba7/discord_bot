@@ -19,14 +19,6 @@ bot = commands.Bot(command_prefix="$", intents=intents)
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("Pong")
 
-@bot.tree.command(name="ping_user", description="ping a user")
-async def ping_user(interaction: discord.Interaction, user: discord.User):
-    await interaction.response.send_message(f"Hey {user.mention}")
-
-@bot.tree.command(name="parrot", description="repeats argument")
-async def parrot(interaction: discord.Interaction, message: str):
-    await interaction.response.send_message(message)
-
 @bot.tree.command(name="join_leaderboard", description="allows a user to join the leaderboard")
 async def join_leaderboard(interaction: discord.Interaction, steam_id: str):
     if len(steam_id) != 17:
