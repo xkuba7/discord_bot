@@ -1,6 +1,7 @@
 import datetime
 import discord
-from dotenv import load_dotenv
+from discord import app_commands
+from dotenv import load_dotenv, set_key
 import os
 from discord.ext import commands, tasks
 import data_updater
@@ -112,6 +113,13 @@ async def create_leaderboard():
         channel = bot.get_channel(int(channel_id))
         await channel.send(embed=embed)
         await channel.send(f"Winner is {f"<@{winner_id}>"} with {winner_hours:.2f} hours")
+
+@bot.tree.command(name="set_leaderboard_chat", description="sets current channel as the leaderboard channel")
+@app_commands.checks.has_permissions(administrator=True)
+async def set_leaderboard_chat(interaction: discord.Interaction):
+    set_key(".env", "CHANNEL_ID", str(interaction.channel_id))
+    load_dotenv(override=True)
+    await interaction.response.send_message(f"The bot will post leaderboards here now")
 
 @bot.event
 async def on_ready():
