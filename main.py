@@ -5,6 +5,7 @@ from dotenv import load_dotenv, set_key
 import os
 from discord.ext import commands, tasks
 import data_updater
+import config_manager
 import steam_hours
 
 load_dotenv()
@@ -117,9 +118,10 @@ async def create_leaderboard():
 @bot.tree.command(name="set_leaderboard_chat", description="sets current channel as the leaderboard channel")
 @app_commands.checks.has_permissions(administrator=True)
 async def set_leaderboard_chat(interaction: discord.Interaction):
-    set_key(".env", "CHANNEL_ID", str(interaction.channel_id))
-    load_dotenv(override=True)
-    await interaction.response.send_message(f"The bot will post leaderboards here now")
+    config = config_manager.load_config()
+    config["channel_id"] = interaction.channel_id
+    config_manager.save_config(config)
+    await interaction.response.send_message("The bot will post leaderboards here now")
 
 @bot.event
 async def on_ready():
