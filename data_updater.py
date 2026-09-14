@@ -1,13 +1,15 @@
 import json
 
+DATA_FILE = "data.json"
+
 def get_data():
-    with open("data.json", "r") as f:
+    with open(DATA_FILE, "r") as f:
         data = json.load(f)
 
     return data
 
 def save_data(data):
-    with open("data.json", "w") as f:
+    with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
 def add_player(discord_id, steam_id):

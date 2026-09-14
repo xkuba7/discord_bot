@@ -7,3 +7,4 @@ services:
       - .env
     volumes:
       - ./data.json:/app/data.json
+      - ./config.json:/app/config.json

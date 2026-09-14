@@ -1,4 +1,5 @@
 import datetime
+from re import escape
 import discord
 from discord import app_commands
 from dotenv import load_dotenv, set_key
@@ -19,29 +20,29 @@ bot = commands.Bot(command_prefix="$", intents=intents)
 
 @bot.tree.command(name="ping", description="check if bot is alive")
 async def ping(interaction: discord.Interaction):
-    await interaction.response.send_message("Pong")
+    await interaction.response.send_message("Pong", ephemeral=True)
 
-@bot.tree.command(name="join_leaderboard", description="allows a user to join the leaderboard")
+bot.tree.command(name="join_leaderboard", description="allows a user to join the leaderboard")
 async def join_leaderboard(interaction: discord.Interaction, steam_id: str):
     if len(steam_id) != 17:
-        await interaction.response.send_message("Please input a valid steam_id, its 17 characters long")
+        await interaction.response.send_message("Please input a valid steam_id, its 17 characters long", ephemeral=True)
         return;
 
     discord_id = str(interaction.user.id)
     check = data_updater.add_player(discord_id, steam_id)
     if check is True:
-        await interaction.response.send_message("User added to the leaderboard")
+        await interaction.response.send_message("User added to the leaderboard", ephemeral=True)
     else:
-        await interaction.response.send_message("User is already on the leaderboard")
+        await interaction.response.send_message("User is already on the leaderboard", ephemeral=True)
 
 @bot.tree.command(name="leave_leaderboard", description="allows a user to join the leaderboard")
 async def leave_leaderboard(interaction: discord.Interaction):
     discord_id = str(interaction.user.id)
     check = data_updater.remove_player(discord_id)
     if check is True:
-        await interaction.response.send_message("User removed from the leaderbord")
+        await interaction.response.send_message("User removed from the leaderbord", ephemeral=True)
     else:
-        await interaction.response.send_message("User is not on the leaderboard")
+        await interaction.response.send_message("User is not on the leaderboard", ephemeral=True)
 
 @bot.tree.command(name="get_hours", description="gets total hours played on steam")
 async def get_hours(interaction: discord.Interaction):
@@ -49,17 +50,16 @@ async def get_hours(interaction: discord.Interaction):
     data = data_updater.get_data()
 
     if discord_id not in data:
-        await interaction.response.send_message("Your information has not been added to the leaderboard, please use /join_leaderboard")
+        await interaction.response.send_message("Your information has not been added to the leaderboard, please use /join_leaderboard", ephemeral=True)
         return;
 
     steam_id = data[discord_id]["steam_id"]
     hours = steam_hours.get_hours(steam_id, steam_api)
-    await interaction.response.send_message(f"Your have played {hours:.2f} hours on steam")
+    await interaction.response.send_message(f"Your have played {hours:.2f} hours on steam", ephemeral=True)
 
 @bot.tree.command(name="list_players_and_wins", description="lists all the players and their wins")
 async def list_players(interaction: discord.Interaction):
     data = data_updater.get_data()
-    #users = data.keys()
     embed = discord.Embed(title="Leaderboard members", description="", color=discord.Color.orange())
 
     for user, value in data.items():
@@ -121,7 +121,7 @@ async def set_leaderboard_chat(interaction: discord.Interaction):
     config = config_manager.load_config()
     config["channel_id"] = interaction.channel_id
     config_manager.save_config(config)
-    await interaction.response.send_message("The bot will post leaderboards here now")
+    await interaction.response.send_message("The bot will post leaderboards here now", ephemeral=True)
 
 @bot.event
 async def on_ready():
