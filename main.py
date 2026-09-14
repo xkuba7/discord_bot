@@ -18,6 +18,19 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="$", intents=intents)
 
+@bot.event
+async def on_ready():
+    await bot.tree.sync()
+    print("Command tree synced and bot is ready")
+    for cmd in bot.tree.get_commands():
+        print(cmd.name)
+
+    if not get_hours_monday.is_running():
+        get_hours_monday.start()
+
+    if not create_leaderboard.is_running():
+        create_leaderboard.start()
+
 @bot.tree.command(name="ping", description="check if bot is alive")
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("Pong", ephemeral=True)
@@ -68,8 +81,8 @@ async def list_players(interaction: discord.Interaction):
         username = user.name
         embed.add_field(name=username, value=f"Number of wins: {win_count}", inline=False)
 
-    embed.set_footer(text="Combustion Bot")
-    await interaction.response.send_message(embed=embed)
+    embed.set_footer(text=bot.user.name)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @tasks.loop(time=datetime.time(hour=0, minute=0))
 async def get_hours_monday():
@@ -85,7 +98,7 @@ async def get_hours_monday():
 channel_id = os.getenv("CHANNEL_ID")
 @tasks.loop(time=datetime.time(hour=23, minute=50))
 async def create_leaderboard():
-    if datetime.datetime.now().weekday() == 0: # 6 is sunday
+    if datetime.datetime.now().weekday() == 6: # 6 is sunday
         data = data_updater.get_data()
         new_data = {}
 
@@ -122,19 +135,6 @@ async def set_leaderboard_chat(interaction: discord.Interaction):
     config["channel_id"] = interaction.channel_id
     config_manager.save_config(config)
     await interaction.response.send_message("The bot will post leaderboards here now", ephemeral=True)
-
-@bot.event
-async def on_ready():
-    await bot.tree.sync()
-    print("Command tree synced and bot is ready")
-    for cmd in bot.tree.get_commands():
-        print(cmd.name)
-
-    if not get_hours_monday.is_running():
-        get_hours_monday.start()
-
-    if not create_leaderboard.is_running():
-        create_leaderboard.start()
 
 token = str(os.getenv("DISCORD_TOKEN"))
 bot.run(token)
