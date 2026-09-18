@@ -22,7 +22,7 @@ bot = commands.Bot(command_prefix="$", intents=intents)
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("Pong", ephemeral=True)
 
-bot.tree.command(name="join_leaderboard", description="allows a user to join the leaderboard")
+@bot.tree.command(name="join_leaderboard", description="allows a user to join the leaderboard")
 async def join_leaderboard(interaction: discord.Interaction, steam_id: str):
     if len(steam_id) != 17:
         await interaction.response.send_message("Please input a valid steam_id, its 17 characters long", ephemeral=True)
